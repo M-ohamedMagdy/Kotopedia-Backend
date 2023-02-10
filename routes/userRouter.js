@@ -1,6 +1,7 @@
 const express = require('express');
 const {hashPassword, comparePassword, createToken, verifyToken} = require('../helpers/userHelper');
 const userModel = require('../models/userModel');
+const productModel = require('../models/productModel');
 const userValidationMW = require('../helpers/dataValidation');
 const customError = require('../helpers/customError');
 
@@ -41,25 +42,41 @@ userRouter.post('/cart', async (req, res, next)=>{
         if(!user) throw customError(404, 'can not find any data for this user');
         user.cart.push({title, quantity, unitPrice});
         user.save();
-        res.status(200).send("product successfully added to cart"/*+"\n"+user*/);
+        res.status(200).send("product successfully added to cart");
     } catch (error) {
         next(error);
     }
 })
 
-// add order for user from his cart
-// userRouter.post('/orders', async (req, res, next)=>{
-//     try {
-//         const { email } = req.body;
-//         const user = await userModel.findOne({email});
+// add order to buy one item
+// add order for user ( all cart )
+userRouter.post('/orders', async (req, res, next)=>{
+    try {
+        const { email, title } = req.body;
+        const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        const d = new Date();
+        const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
+        if(title){
+            const {unitPrice} = await productModel.findOne({title});
+            const productsInOrder = [{title, quantity:1, unitPrice}];
+            const orderID = Date.now();
+            user.order.push({productsInOrder, status:'pending', date, orderID});
+        }
+        else{
+            const productsInOrder = user.cart.filter(()=>true);
+            const orderID = Date.now();
+            user.order.push({productsInOrder, status:'pending', date, orderID});
+        }
+        user.save();
+        res.status(200).send("order successfully added to user orders");
+    } catch (error) {
+        next(error);
+    }
+})
 
-//         res.status(200).send("order successfully added to user"+"\n"+user);
-//     } catch (error) {
-//         next(error);
-//     }
-// })
 
-// to get one user info for profile page
+// get one user info for profile page
 userRouter.get('/profile', async (req, res, next)=>{
     try {
         const { email } = req.body;
@@ -71,7 +88,7 @@ userRouter.get('/profile', async (req, res, next)=>{
     }
 })
 
-// to get products for user cart
+// get all products in cart
 userRouter.get('/cart', async (req, res, next)=>{
     try {
         const { email } = req.body;
@@ -83,24 +100,25 @@ userRouter.get('/cart', async (req, res, next)=>{
     }
 })
 
-// to get user orders
+// get all user orders
 userRouter.get('/orders', async (req, res, next)=>{
     try {
         const { email } = req.body;
         const user = await userModel.findOne({email});
         if(!user) throw customError(404, 'can not find any data for this user');
-        res.status(200).send(user.orders);
+        res.status(200).send(user.order);
     } catch (error) {
         next(error);
     }
 })
 
-// to empty user cart
-// to remove product from  cart
+// empty user cart
+// remove one product from  cart by title
 userRouter.delete('/cart', async (req, res, next)=>{
     try {
         const { email, title } = req.body;
         const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
         if(title){
             const newCart = user.cart.filter( cartItem => cartItem.title !== title );
             user.cart = newCart;
@@ -113,12 +131,12 @@ userRouter.delete('/cart', async (req, res, next)=>{
     }
 })
 
-
-// to change quatity of cart product
+// update quatity of cart product
 userRouter.patch('/cart', async (req, res, next)=>{
     try {
         const { email, title, quantity } = req.body;
         const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
         const newCart = user.cart.map( cartItem =>{
             if(cartItem.title === title) {cartItem.quantity = quantity}
             return cartItem;   
@@ -132,32 +150,85 @@ userRouter.patch('/cart', async (req, res, next)=>{
     }
 })
 
+////////////////////////////////////////////////////////////////////
+// admin CRUD
 
-
-
-
-
-
-
-
-/*FOR DEVELOPMENT ONLY*/
-
+// get all users
+// get one user by email
 userRouter.get('/', async (req, res, next)=>{
     try {
-        const allUsers = await userModel.find({});
-        res.status(200).send(allUsers);
+        const { email } = req.body;
+        if (email) {
+            const user = await userModel.findOne({email});
+            res.status(200).send(user);
+        } else {
+            const allUsers = await userModel.find();
+            res.status(200).send(allUsers);
+        }
     } catch (error) {
         next(error);
     }
 })
+
+// delete all users
+// delete one user by email
 userRouter.delete('/', async (req, res, next)=>{
     try {
-        await userModel.deleteMany();
-        res.status(200).send("deleted all data successfully");
+        const { email } = req.body;
+        if(email){
+            await userModel.deleteOne({email});
+        }
+        else{
+            await userModel.deleteMany();
+        }
+        res.status(200).send("deleted successfully");
     } catch (error) {
         next(error);
     }
 })
+
+// delete all user orders
+// delete one user order by id
+userRouter.delete('/orders', async (req, res, next)=>{
+    try {
+        const { email, orderID } = req.body;
+        const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        if(orderID){
+            const newOrders = user.order.filter( order => order.orderID !== +orderID);
+            user.order = [];
+            user.order = newOrders.filter(()=>true);
+        } 
+        else{
+            user.order = [];
+        }
+        user.save();
+        res.status(200).send("orders deleted successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+// update order status
+userRouter.patch('/orders', async (req, res, next)=>{
+    try {
+        const { email, orderID, status } = req.body;
+        const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        const newOrders = user.order.map( eachOrder => {
+            if(eachOrder.orderID === orderID){eachOrder.status = status}
+            return eachOrder;
+        })
+        user.order = [];
+        user.order = newOrders.filter(()=>true);
+        user.save();
+        res.status(200).send("order status updated successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+
 
 
 module.exports = userRouter;

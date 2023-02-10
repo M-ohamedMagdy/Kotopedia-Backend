@@ -1,8 +1,7 @@
-const { string } = require('joi');
 const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 
-mongoose.connect('mongodb://127.0.0.1:27017/kotopedia', () => console.log("Connected to DB successfully"));
+mongoose.connect('mongodb://127.0.0.1:27017/kotopedia', () => console.log("Users model connected to DB successfully"));
 
 const { Schema } = mongoose;
 const userSchema = new Schema({ 
