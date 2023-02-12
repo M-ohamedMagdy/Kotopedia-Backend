@@ -37,10 +37,11 @@ userRouter.post('/login', async (req, res, next)=>{
 // add product to cart
 userRouter.post('/cart', async (req, res, next)=>{
     try {
-        const { email, title, quantity, unitPrice } = req.body;
+        const { email, title } = req.body;
         const user = await userModel.findOne({email});
         if(!user) throw customError(404, 'can not find any data for this user');
-        user.cart.push({title, quantity, unitPrice});
+        const { unitPrice, category, image } = await productModel.findOne({title});
+        user.cart.push({title, quantity:1, unitPrice, category, image});
         user.save();
         res.status(200).send("product successfully added to cart");
     } catch (error) {
@@ -57,15 +58,14 @@ userRouter.post('/orders', async (req, res, next)=>{
         if(!user) throw customError(404, 'can not find any data for this user');
         const d = new Date();
         const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
+        const orderID = Date.now();
         if(title){
             const {unitPrice} = await productModel.findOne({title});
             const productsInOrder = [{title, quantity:1, unitPrice}];
-            const orderID = Date.now();
             user.order.push({productsInOrder, status:'pending', date, orderID});
         }
         else{
             const productsInOrder = user.cart.filter(()=>true);
-            const orderID = Date.now();
             user.order.push({productsInOrder, status:'pending', date, orderID});
         }
         user.save();
@@ -150,8 +150,26 @@ userRouter.patch('/cart', async (req, res, next)=>{
     }
 })
 
-////////////////////////////////////////////////////////////////////
-// admin CRUD
+// update user info in profile
+userRouter.patch('/profile', async (req, res, next)=>{
+    try {
+        const { email, name, password, photo } = req.body;
+        const user = await userModel.findOne({email});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        if(name){await userModel.findOneAndUpdate({email},{name})}
+        if(password){
+            const hashedPassword = await hashPassword(password);
+            await userModel.findOneAndUpdate({email},{password:hashedPassword})
+        }
+        // photo remained unhandled ?????????????
+        if(photo){}
+        res.status(200).send("user info updated successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+/////////////////////////////////////////// ONLY ADMIN CRUD /////////////////////////////////////////
 
 // get all users
 // get one user by email
@@ -227,8 +245,5 @@ userRouter.patch('/orders', async (req, res, next)=>{
         next(error);
     }
 })
-
-
-
 
 module.exports = userRouter;

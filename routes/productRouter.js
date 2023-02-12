@@ -8,7 +8,7 @@ const productRouter = express.Router();
 productRouter.post('/', async (req, res, next)=>{
     try {
         const {title, category, unitPrice, description, author, image} = req.body;
-        const newProduct = await productModel.create({title, category, unitPrice, description, author, image});
+        await productModel.create({title, category, unitPrice, description, author, image});
         res.status(200).send("new product added successfully");
     } catch (error) {
         next(error);
