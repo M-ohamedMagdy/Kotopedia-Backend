@@ -4,15 +4,51 @@ const userModel = require('../models/userModel');
 const productModel = require('../models/productModel');
 const userValidationMW = require('../helpers/dataValidation');
 const customError = require('../helpers/customError');
+const multer = require('multer');
+const cloud = require('../cloudinaryConfig'); 
+const fs = require('fs');
 
 const userRouter = express.Router();
 
+
+const multerStorage = multer.diskStorage({
+    destination:(req,file,cb)=>{
+        cb(null,'./assets')
+    },
+    filename:(req,file,cb)=>{
+        cb(null,file.originalname);
+    }
+})
+const multerFilter = (req,file,cb)=>{
+    if(
+        file.mimetype === 'image/png'||
+        file.mimetype === 'image/jpg'||
+        file.mimetype === 'image/jpeg'
+    ){
+        cb(null,true)
+    }else{
+        cb(null,false)
+    }
+}
+
+const upload = multer({storage:multerStorage ,fileFilter:multerFilter})
+
+
+
+
 // add new user
-userRouter.post('/signup', userValidationMW, async (req, res, next)=>{
+userRouter.post('/signup', userValidationMW,upload.single('photo') , async (req, res, next)=>{
     try {
-        const {name, email, password, gender, photo} = req.body;
+        const {name, email, password, gender} = req.body;
+
+        const result = await cloud.uploads(req.file.path)
+        if(req.file)photo = result.url;
+        console.log(req.file);
+        console.log(req.body);
+        console.log(photo);
         const hashedPassword = await hashPassword(password);
         const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
+        fs.unlinkSync(req.file.path)
         res.status(200).send(newUser);
     } catch (error) {
         next(error);
