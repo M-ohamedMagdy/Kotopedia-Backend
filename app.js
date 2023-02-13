@@ -13,4 +13,4 @@ app.use((error,req,res,next) => res.status(error.statusCode || 500).send(error.m
 
 app.listen(port, () => {
   console.log(`App listening on port ${port}`)
-})
+});

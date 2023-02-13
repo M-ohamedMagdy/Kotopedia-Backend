@@ -5,12 +5,32 @@ const productModel = require('../models/productModel');
 const userValidationMW = require('../helpers/dataValidation');
 const customError = require('../helpers/customError');
 
+const multer = require('multer');
+const upload = multer();
+
 const userRouter = express.Router();
 
-// add new user
-userRouter.post('/signup', userValidationMW, async (req, res, next)=>{
+userRouter.post('/test', userValidationMW, upload.single('photo'), async (req, res, next)=>{
     try {
-        const {name, email, password, gender, photo} = req.body;
+        const { name, email, password, gender } = req.body;
+        const photo  = req.file;
+        console.log("name : ",name);
+        console.log("email : ",email);
+        console.log("password : ",password);
+        console.log("gender : ",gender);
+        console.log("photo : ",photo);
+        res.status(200).send("done");
+    } catch (error) {
+        next(error);
+    }
+})
+
+// add new user
+userRouter.post('/signup', userValidationMW, upload.single('photo'), async (req, res, next)=>{
+    try {
+        const { name, email, password, gender } = req.body;
+        const  photo  = req.file;
+        console.log(photo);
         const hashedPassword = await hashPassword(password);
         const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
         res.status(200).send(newUser);
@@ -151,9 +171,10 @@ userRouter.patch('/cart', async (req, res, next)=>{
 })
 
 // update user info in profile
-userRouter.patch('/profile', async (req, res, next)=>{
+userRouter.patch('/profile', upload.single('photo'), async (req, res, next)=>{
     try {
         const { email, name, password, photo } = req.body;
+        console.log(email);
         const user = await userModel.findOne({email});
         if(!user) throw customError(404, 'can not find any data for this user');
         if(name){await userModel.findOneAndUpdate({email},{name})}
