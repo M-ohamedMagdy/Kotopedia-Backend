@@ -3,6 +3,8 @@ const productModel = require('../models/productModel');
 const {userModel, orderModel} = require('../models/userModel');
 const {hashPassword, comparePassword, createToken, verifyToken, photoUpdateMW} = require('../helpers/userHelper');
 const customError = require('../helpers/customError');
+const cloud = require('../cloudinaryConfig');
+const fs = require('fs');
 
 const adminRouter = express.Router();
 
@@ -16,11 +18,11 @@ app.use(cors());
 // add one product to DB
 adminRouter.post('/products', photoUpdateMW, async (req, res, next)=>{
     try {
-        const {title, category, unitPrice, description, author, image} = req.body;
+        const {title, category, unitPrice, description, author} = req.body;
         const result = await cloud.uploads(req.file.path);
         if(req.file) photo = result.url;
-        await productModel.create({title, category, unitPrice, description, author, image});
-        fs.unlinkSync(req.file.path)
+        await productModel.create({title, category, unitPrice, description, author, photo});
+        fs.unlinkSync(req.file.path);
         res.status(200).send("new product added successfully");
     } catch (error) {
         next(error);

@@ -11,7 +11,7 @@ const productSchema = new Schema({
                                     unitPrice: Number,
                                     description: String,
                                     author: String,
-                                    image: String
+                                    photo: String
                                 });
 
 productSchema.plugin(uniqueValidator);
