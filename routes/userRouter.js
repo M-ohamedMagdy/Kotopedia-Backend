@@ -1,39 +1,34 @@
 const express = require('express');
-const {hashPassword, comparePassword, createToken, verifyToken} = require('../helpers/userHelper');
-const userModel = require('../models/userModel');
+const {hashPassword, comparePassword, createToken, verifyToken, photoUpdateMW} = require('../helpers/userHelper');
+const {userModel, orderModel} = require('../models/userModel');
 const productModel = require('../models/productModel');
 const userValidationMW = require('../helpers/dataValidation');
 const customError = require('../helpers/customError');
-
-const multer = require('multer');
-const upload = multer();
+const cloud = require('../cloudinaryConfig'); 
+const fs = require('fs');
 
 const userRouter = express.Router();
 
-userRouter.post('/test', userValidationMW, upload.single('photo'), async (req, res, next)=>{
-    try {
-        const { name, email, password, gender } = req.body;
-        const photo  = req.file;
-        console.log("name : ",name);
-        console.log("email : ",email);
-        console.log("password : ",password);
-        console.log("gender : ",gender);
-        console.log("photo : ",photo);
-        res.status(200).send("done");
-    } catch (error) {
-        next(error);
-    }
-})
+const cors = require('cors');
+const app = express();       
+app.use(cors());
 
-// add new user
-userRouter.post('/signup', userValidationMW, upload.single('photo'), async (req, res, next)=>{
+//////////////////////////////////////// User post requests ////////////////////////////////////////
+
+
+// add new user (signup)
+userRouter.post('/signup', userValidationMW, photoUpdateMW, async (req, res, next)=>{
     try {
         const { name, email, password, gender } = req.body;
-        const  photo  = req.file;
-        console.log(photo);
+
+        const result = await cloud.uploads(req.file.path);
+
+        if(req.file) photo = result.url;
+
         const hashedPassword = await hashPassword(password);
         const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
-        res.status(200).send(newUser);
+        fs.unlinkSync(req.file.path);
+        res.status(200).json(newUser);
     } catch (error) {
         next(error);
     }
@@ -42,13 +37,13 @@ userRouter.post('/signup', userValidationMW, upload.single('photo'), async (req,
 // login for existing user
 userRouter.post('/login', async (req, res, next)=>{
     try {
-        const {email, password} = req.body;
+        const { email, password } = req.body;
         const user = await userModel.findOne({email});
         if(!user) throw customError(401,'Invalid email or password');
         const result = await comparePassword(password, user.password);
         if(!result){throw customError(401, 'Invalid email or password')};
         const token = await createToken(user.id);
-        res.status(200).send({accessToken: token})/*.cookie('accessToken', token, { expires: new Date(Date.now() + (60*15*1000)), httpOnly: true });*/
+        res.status(200).json({token, user});
     } catch (error) {
         next(error);
     }
@@ -57,10 +52,10 @@ userRouter.post('/login', async (req, res, next)=>{
 // add product to cart
 userRouter.post('/cart', async (req, res, next)=>{
     try {
-        const { email, title } = req.body;
-        const user = await userModel.findOne({email});
+        const { userID, bookID } = req.body;
+        const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
-        const { unitPrice, category, image } = await productModel.findOne({title});
+        const { title, unitPrice, category, image } = await productModel.findOne({_id:bookID});
         user.cart.push({title, quantity:1, unitPrice, category, image});
         user.save();
         res.status(200).send("product successfully added to cart");
@@ -73,89 +68,97 @@ userRouter.post('/cart', async (req, res, next)=>{
 // add order for user ( all cart )
 userRouter.post('/orders', async (req, res, next)=>{
     try {
-        const { email, title } = req.body;
-        const user = await userModel.findOne({email});
+        const { userID, bookID } = req.body;
+        const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
         const d = new Date();
         const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
-        const orderID = Date.now();
-        if(title){
-            const {unitPrice} = await productModel.findOne({title});
-            const productsInOrder = [{title, quantity:1, unitPrice}];
-            user.order.push({productsInOrder, status:'pending', date, orderID});
+        if(bookID){
+            const {title,unitPrice,category,image} = await productModel.findOne({_id:bookID});
+            await orderModel.create({email:user.email, userID, date, productsInOrder:{title, quantity:1, unitPrice, category, image}});
+            res.status(200).send(`item with id ${bookID} is ordered successfully`);
         }
         else{
             const productsInOrder = user.cart.filter(()=>true);
-            user.order.push({productsInOrder, status:'pending', date, orderID});
+            if(!productsInOrder) res.status(404).send("The cart is empty");
+            await orderModel.create({email:user.email, userID, date, productsInOrder});
+            res.status(200).send("all cart items added successfully to as user order");
         }
-        user.save();
-        res.status(200).send("order successfully added to user orders");
     } catch (error) {
         next(error);
     }
 })
 
 
-// get one user info for profile page
-userRouter.get('/profile', async (req, res, next)=>{
+//////////////////////////////////////// User get requests ////////////////////////////////////////
+
+
+// get all products
+userRouter.get('/products', async (req, res, next)=>{
     try {
-        const { email } = req.body;
-        const user = await userModel.findOne({email});
+        const products = await productModel.find();
+        res.status(200).json(products);
+    } catch (error) {
+        next(error);
+    }
+})
+
+// get products by category
+userRouter.get('/products/:category', async (req, res, next)=>{
+    try {
+        const { category } = req.params;
+        const categoryProducts = await productModel.find({category});
+        res.status(200).json(categoryProducts);
+    } catch (error) {
+        next(error);
+    }
+})
+
+// get one user info for profile page
+userRouter.get('/profile/:id', async (req, res, next)=>{
+    try {
+        const { id } = req.params;
+        const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
-        res.status(200).send(user);
+        res.status(200).json(user);
     } catch (error) {
         next(error);
     }
 })
 
 // get all products in cart
-userRouter.get('/cart', async (req, res, next)=>{
+userRouter.get('/cart/:id', async (req, res, next)=>{
     try {
-        const { email } = req.body;
-        const user = await userModel.findOne({email});
+        const { id } = req.params;
+        const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
-        res.status(200).send(user.cart);
+        res.status(200).json({userCart:user.cart});
     } catch (error) {
         next(error);
     }
 })
 
 // get all user orders
-userRouter.get('/orders', async (req, res, next)=>{
+userRouter.get('/orders/:id', async (req, res, next)=>{
     try {
-        const { email } = req.body;
-        const user = await userModel.findOne({email});
-        if(!user) throw customError(404, 'can not find any data for this user');
-        res.status(200).send(user.order);
+        const { id } = req.params;
+        const userOrders = await orderModel.find({userID:id});
+        if(!userOrders) res.status(200).send("This user has no orders");
+        res.status(200).json({userCart:userOrders});
     } catch (error) {
         next(error);
     }
 })
 
-// empty user cart
-// remove one product from  cart by title
-userRouter.delete('/cart', async (req, res, next)=>{
-    try {
-        const { email, title } = req.body;
-        const user = await userModel.findOne({email});
-        if(!user) throw customError(404, 'can not find any data for this user');
-        if(title){
-            const newCart = user.cart.filter( cartItem => cartItem.title !== title );
-            user.cart = newCart;
-        }
-        else { user.cart=[]; }
-        user.save();
-        res.status(200).send(`product with title ${title} successfully removed`)
-    } catch (error) {
-        next(error);
-    }
-})
+
+//////////////////////////////////////// User patch requests ////////////////////////////////////////
+
 
 // update quatity of cart product
 userRouter.patch('/cart', async (req, res, next)=>{
     try {
-        const { email, title, quantity } = req.body;
-        const user = await userModel.findOne({email});
+        const { userID, title, quantity } = req.body;
+        const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
         const newCart = user.cart.map( cartItem =>{
             if(cartItem.title === title) {cartItem.quantity = quantity}
@@ -171,100 +174,125 @@ userRouter.patch('/cart', async (req, res, next)=>{
 })
 
 // update user info in profile
-userRouter.patch('/profile', upload.single('photo'), async (req, res, next)=>{
+userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
     try {
-        const { email, name, password, photo } = req.body;
-        console.log(email);
-        const user = await userModel.findOne({email});
+        const { id, email, name, gender, password, photo } = req.body;
+        const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
-        if(name){await userModel.findOneAndUpdate({email},{name})}
         if(password){
             const hashedPassword = await hashPassword(password);
-            await userModel.findOneAndUpdate({email},{password:hashedPassword})
+            await userModel.findByIdAndUpdate(id,{password:hashedPassword})
         }
         // photo remained unhandled ?????????????
-        if(photo){}
+        //const result = await cloud.uploads(req.file.path);
+        //if(req.file) photo = result.url;
+        await userModel.findByIdAndUpdate(id,{email, name, gender, photo});
+        //fs.unlinkSync(req.file.path);
         res.status(200).send("user info updated successfully");
     } catch (error) {
         next(error);
     }
 })
 
+
+//////////////////////////////////////// User delete requests ////////////////////////////////////////
+
+
+// remove one product from  cart by title
+userRouter.delete('/cart/:id/:title', async (req, res, next)=>{
+    try {
+        const { id, title } = req.params;
+        const user = await userModel.findOne({_id:id});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        const newCart = user.cart.filter( cartItem => cartItem.title !== title );
+        user.cart = newCart;
+        user.save();
+        res.status(200).send(`product with title ${title} successfully removed`)
+    } catch (error) {
+        next(error);
+    }
+})
+
+// empty user cart
+userRouter.delete('/cart/:id', async (req, res, next)=>{
+    try {
+        const { id } = req.params;
+        const user = await userModel.findOne({_id:id});
+        if(!user) throw customError(404, 'can not find any data for this user');
+        user.cart = [];
+        user.save();
+        res.status(200).send("cart is empty now")
+    } catch (error) {
+        next(error);
+    }
+})
+
+
+// cancel an order
+userRouter.delete('/orders/:orderID', async (req, res, next)=>{
+    try {
+        const { orderID } = req.params;
+        const order = await orderModel.findOne({_id:orderID});
+        if(order.status !== 'pending') res.status(405).send(`can not cancel this order after status has been updated to ${order.status}`);
+        await orderModel.deleteOne({_id:orderID});
+        res.status(200).send("order deleted successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+
 /////////////////////////////////////////// ONLY ADMIN CRUD /////////////////////////////////////////
 
-// get all users
-// get one user by email
-userRouter.get('/', async (req, res, next)=>{
-    try {
-        const { email } = req.body;
-        if (email) {
-            const user = await userModel.findOne({email});
-            res.status(200).send(user);
-        } else {
-            const allUsers = await userModel.find();
-            res.status(200).send(allUsers);
-        }
-    } catch (error) {
-        next(error);
-    }
-})
+// // get all users
+// // get one user by email
+// userRouter.get('/users/:id', async (req, res, next)=>{
+//     try {
+//         const { id } = req.params;
+//         if (id) {
+//             const user = await userModel.findById(id);
+//             res.status(200).send(user);
+//         } else {
+//             const allUsers = await userModel.find();
+//             res.status(200).send(allUsers);
+//         }
+//     } catch (error) {
+//         next(error);
+//     }
+// })
 
-// delete all users
-// delete one user by email
-userRouter.delete('/', async (req, res, next)=>{
-    try {
-        const { email } = req.body;
-        if(email){
-            await userModel.deleteOne({email});
-        }
-        else{
-            await userModel.deleteMany();
-        }
-        res.status(200).send("deleted successfully");
-    } catch (error) {
-        next(error);
-    }
-})
 
-// delete all user orders
-// delete one user order by id
-userRouter.delete('/orders', async (req, res, next)=>{
-    try {
-        const { email, orderID } = req.body;
-        const user = await userModel.findOne({email});
-        if(!user) throw customError(404, 'can not find any data for this user');
-        if(orderID){
-            const newOrders = user.order.filter( order => order.orderID !== +orderID);
-            user.order = [];
-            user.order = newOrders.filter(()=>true);
-        } 
-        else{
-            user.order = [];
-        }
-        user.save();
-        res.status(200).send("orders deleted successfully");
-    } catch (error) {
-        next(error);
-    }
-})
+// // delete all users
+// // delete one user by email
+// userRouter.delete('/users', async (req, res, next)=>{
+//     try {
+//         const { id } = req.body;
+//         if(id){
+//             await userModel.deleteOne({_id:id});
+//         }
+//         else{
+//             await userModel.deleteMany();
+//         }
+//         res.status(200).send("deleted successfully");
+//     } catch (error) {
+//         next(error);
+//     }
+// })
 
-// update order status
-userRouter.patch('/orders', async (req, res, next)=>{
-    try {
-        const { email, orderID, status } = req.body;
-        const user = await userModel.findOne({email});
-        if(!user) throw customError(404, 'can not find any data for this user');
-        const newOrders = user.order.map( eachOrder => {
-            if(eachOrder.orderID === orderID){eachOrder.status = status}
-            return eachOrder;
-        })
-        user.order = [];
-        user.order = newOrders.filter(()=>true);
-        user.save();
-        res.status(200).send("order status updated successfully");
-    } catch (error) {
-        next(error);
-    }
-})
+
+// // update order status
+// userRouter.patch('/orders', async (req, res, next)=>{
+//     try {
+//         const { id, status } = req.body;
+//         const order = await orderModel.findOne({_id:id});
+//         if(order.status !== 'pending') res.stauts(200).send(`can not update status for this order`);
+//         await orderModel.findByIdAndUpdate(id,{status});
+//         res.status(200).send(`order status successfully updated to ${status}`);
+//     } catch (error) {
+//         next(error);
+//     }
+// })
+
+
 
 module.exports = userRouter;

@@ -2,6 +2,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const util = require('util');
 const customError = require('./customError');
+const cloud = require('../cloudinaryConfig'); 
+const fs = require('fs');
+const multer = require('multer');
+
 
 const saltRounds = 10;
 const secretTokenKey = 'meanStackProjectKOTOPEDIA';
@@ -17,4 +21,29 @@ const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:60*1
 
 const verifyToken = (token) => asyncVerifyToken(token, secretTokenKey)
 
-module.exports = { hashPassword, comparePassword, createToken, verifyToken };
+const multerStorage = multer.diskStorage({
+    destination:(req,file,cb)=>{
+        cb(null,'./assets')
+    },
+    filename:(req,file,cb)=>{
+        cb(null,file.originalname);
+    }
+})
+
+const multerFilter = (req,file,cb)=>{
+    if(
+        file.mimetype === 'image/png'||
+        file.mimetype === 'image/jpg'||
+        file.mimetype === 'image/jpeg'
+    ){
+        cb(null,true)
+    }else{
+        cb(null,false)
+    }
+}
+
+const upload = multer({storage:multerStorage ,fileFilter:multerFilter});
+
+const photoUpdateMW = upload.single('photo');
+
+module.exports = { hashPassword, comparePassword, createToken, verifyToken, photoUpdateMW };
