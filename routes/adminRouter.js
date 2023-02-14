@@ -63,18 +63,21 @@ adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
 })
 
 // delete all products
+adminRouter.delete('/products', async (req, res, next)=>{
+    try {
+        await productModel.deleteMany();
+        res.status(200).send("deleted all data successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
 // delete one product by id
 adminRouter.delete('/products/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
-        if(id){
-            await productModel.deleteOne({_id:id});
-            res.status(200).send(`deleted product with id ${id} successfully`);
-        }
-        else{
-            await productModel.deleteMany();
-            res.status(200).send("deleted all data successfully");
-        }
+        await productModel.deleteOne({_id:id});
+        res.status(200).send(`deleted product with id ${id} successfully`);
     } catch (error) {
         next(error);
     }
