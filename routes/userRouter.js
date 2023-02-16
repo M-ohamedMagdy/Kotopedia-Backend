@@ -13,6 +13,7 @@ const cors = require('cors');
 const app = express();       
 app.use(cors());
 
+
 //////////////////////////////////////// User post requests ////////////////////////////////////////
 
 
@@ -207,7 +208,7 @@ userRouter.delete('/cart/:id/:title', async (req, res, next)=>{
         const newCart = user.cart.filter( cartItem => cartItem.title !== title );
         user.cart = newCart;
         user.save();
-        res.status(200).send(`product with title ${title} successfully removed`)
+        res.status(200).send(`product with title ${title} successfully removed`);
     } catch (error) {
         next(error);
     }
