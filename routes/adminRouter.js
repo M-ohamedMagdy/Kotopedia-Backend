@@ -19,8 +19,10 @@ app.use(cors());
 adminRouter.post('/products', photoUpdateMW, async (req, res, next)=>{
     try {
         const {title, category, unitPrice, description, author} = req.body;
-        const result = await cloud.uploads(req.file.path);
-        if(req.file) photo = result.url;
+        if(req.file){
+            const result = await cloud.uploads(req.file.path);
+            photo = result.url;
+        }
         await productModel.create({title, category, unitPrice, description, author, photo});
         fs.unlinkSync(req.file.path);
         res.status(200).send("new product added successfully");
@@ -53,11 +55,16 @@ adminRouter.get('/products/:category', async (req, res, next)=>{
 // update product info
 adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
     try {
-        const { id, title, category, unitPrice, description, author, image } = req.body;
+        const { id, title, category, unitPrice, description, author } = req.body;
         const product = await productModel.findOne({_id:id});
         if(!product) customError(404, `can not find a book with id ${id}`);
-        // photo remained unhandled ?????????????
-        await productModel.findByIdAndUpdate(id,{title, category, unitPrice, description, author, image});
+        if(req.file){
+            const result = await cloud.uploads(req.file.path);
+            const photo = result.url;
+            await productModel.findByIdAndUpdate(id,{photo});
+            fs.unlinkSync(req.file.path);
+        }
+        await productModel.findByIdAndUpdate(id,{title, category, unitPrice, description, author});
         res.status(200).send("Book info successfully updated");
     } catch (error) {
         next(error);

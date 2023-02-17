@@ -21,14 +21,12 @@ app.use(cors());
 userRouter.post('/signup', userValidationMW, photoUpdateMW, async (req, res, next)=>{
     try {
         const { name, email, password, gender } = req.body;
-
-        const result = await cloud.uploads(req.file.path);
-
-        if(req.file) photo = result.url;
-
+        if(req.file){
+            const result = await cloud.uploads(req.file.path);
+            photo = result.url;
+        }
         const hashedPassword = await hashPassword(password);
         const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
-        fs.unlinkSync(req.file.path);
         res.status(200).json(newUser);
     } catch (error) {
         next(error);
@@ -177,18 +175,20 @@ userRouter.patch('/cart', async (req, res, next)=>{
 // update user info in profile
 userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
     try {
-        const { id, email, name, gender, password, photo } = req.body;
+        const { id, email, name, gender, password } = req.body;
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
+        if(req.file){
+            const result = await cloud.uploads(req.file.path);
+            const photo = result.url;
+            await userModel.findByIdAndUpdate(id,{photo});
+            fs.unlinkSync(req.file.path);
+        }
         if(password){
             const hashedPassword = await hashPassword(password);
-            await userModel.findByIdAndUpdate(id,{password:hashedPassword})
+            await userModel.findByIdAndUpdate(id,{password:hashedPassword});
         }
-        // photo remained unhandled ?????????????
-        //const result = await cloud.uploads(req.file.path);
-        //if(req.file) photo = result.url;
-        await userModel.findByIdAndUpdate(id,{email, name, gender, photo});
-        //fs.unlinkSync(req.file.path);
+        await userModel.findByIdAndUpdate(id,{email, name, gender});
         res.status(200).send("user info updated successfully");
     } catch (error) {
         next(error);
