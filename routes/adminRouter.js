@@ -25,7 +25,7 @@ adminRouter.post('/products', photoUpdateMW, async (req, res, next)=>{
         }
         await productModel.create({title, category, unitPrice, description, author, photo});
         fs.unlinkSync(req.file.path);
-        res.status(200).send("new product added successfully");
+        res.status(200).json("new product added successfully");
     } catch (error) {
         next(error);
     }
@@ -35,7 +35,7 @@ adminRouter.post('/products', photoUpdateMW, async (req, res, next)=>{
 adminRouter.get('/products', async (req, res, next)=>{
     try {
         const products = await productModel.find();
-        res.status(200).send(products);
+        res.status(200).json(products);
     } catch (error) {
         next(error);
     }
@@ -46,7 +46,7 @@ adminRouter.get('/products/:category', async (req, res, next)=>{
     try {
         const { category } = req.params;
         const categoryProducts = await productModel.find({category});
-        res.status(200).send(categoryProducts);
+        res.status(200).json(categoryProducts);
     } catch (error) {
         next(error);
     }
@@ -65,7 +65,7 @@ adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
             fs.unlinkSync(req.file.path);
         }
         await productModel.findByIdAndUpdate(id,{title, category, unitPrice, description, author});
-        res.status(200).send("Book info successfully updated");
+        res.status(200).json("Book info successfully updated");
     } catch (error) {
         next(error);
     }
@@ -75,7 +75,7 @@ adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
 adminRouter.delete('/products', async (req, res, next)=>{
     try {
         await productModel.deleteMany();
-        res.status(200).send("deleted all data successfully");
+        res.status(200).json("deleted all data successfully");
     } catch (error) {
         next(error);
     }
@@ -86,7 +86,7 @@ adminRouter.delete('/products/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
         await productModel.deleteOne({_id:id});
-        res.status(200).send(`deleted product with id ${id} successfully`);
+        res.status(200).json(`deleted product with id ${id} successfully`);
     } catch (error) {
         next(error);
     }
@@ -101,7 +101,7 @@ adminRouter.get('/users', async (req, res, next)=>{
     try {
         const allUsers = await userModel.find();
         if(!allUsers) res.status(404).send("can not find any users");
-        res.status(200).send(allUsers);
+        res.status(200).json(allUsers);
     } catch (error) {
         next(error);
     }
@@ -113,7 +113,7 @@ adminRouter.get('/users/:id', async (req, res, next)=>{
         const { id } = req.params;
         const user = await userModel.findById(id);
         if(!user) res.status(404).send("can not find any user with mentioned ID");
-        res.status(200).send(user);
+        res.status(200).json(user);
     } catch (error) {
         next(error);
     }
@@ -124,7 +124,7 @@ adminRouter.delete('/users/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
         await userModel.deleteOne({_id:id});
-        res.status(200).send(`deleted user with id ${id} successfully`);
+        res.status(200).json(`deleted user with id ${id} successfully`);
     } catch (error) {
         next(error);
     }
@@ -134,7 +134,7 @@ adminRouter.delete('/users/:id', async (req, res, next)=>{
 adminRouter.delete('/users', async (req, res, next)=>{
     try {
         await userModel.deleteMany();
-        res.status(200).send("deleted all users successfully");
+        res.status(200).json("deleted all users successfully");
     } catch (error) {
         next(error);
     }
@@ -148,7 +148,7 @@ adminRouter.delete('/users', async (req, res, next)=>{
 adminRouter.get('/orders', async (req, res, next)=>{
     try {
         const orders = await orderModel.find();
-        res.status(200).send(orders);
+        res.status(200).json(orders);
     } catch (error) {
         next(error);
     }
@@ -159,7 +159,7 @@ adminRouter.get('/orders/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
         const order = await orderModel.findOne({_id:id});
-        res.status(200).send(order);
+        res.status(200).json(order);
     } catch (error) {
         next(error);
     }
@@ -173,7 +173,7 @@ adminRouter.patch('/orders', async (req, res, next)=>{
         const order = await orderModel.findOne({_id:orderID});
         if(order.status !== 'pending') res.status(200).send(`can not update status for this order anymore`);
         await orderModel.findByIdAndUpdate(orderID,{status});
-        res.status(200).send(`order status successfully updated to ${status}`);
+        res.status(200).json(`order status successfully updated to ${status}`);
     } catch (error) {
         next(error);
     }

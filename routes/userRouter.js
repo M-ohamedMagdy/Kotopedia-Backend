@@ -57,7 +57,7 @@ userRouter.post('/cart', async (req, res, next)=>{
         const { title, unitPrice, category, image } = await productModel.findOne({_id:bookID});
         user.cart.push({title, quantity:1, unitPrice, category, image});
         user.save();
-        res.status(200).send("product successfully added to cart");
+        res.status(200).json("product successfully added to cart");
     } catch (error) {
         next(error);
     }
@@ -75,13 +75,13 @@ userRouter.post('/orders', async (req, res, next)=>{
         if(bookID){
             const {title,unitPrice,category,image} = await productModel.findOne({_id:bookID});
             await orderModel.create({email:user.email, userID, date, productsInOrder:{title, quantity:1, unitPrice, category, image}});
-            res.status(200).send(`item with id ${bookID} is ordered successfully`);
+            res.status(200).json(`item with id ${bookID} is ordered successfully`);
         }
         else{
             const productsInOrder = user.cart.filter(()=>true);
             if(!productsInOrder) res.status(404).send("The cart is empty");
             await orderModel.create({email:user.email, userID, date, productsInOrder});
-            res.status(200).send("all cart items added successfully to as user order");
+            res.status(200).json("all cart items added successfully to as user order");
         }
     } catch (error) {
         next(error);
@@ -166,7 +166,7 @@ userRouter.patch('/cart', async (req, res, next)=>{
         user.cart = [];
         user.cart = newCart.filter(()=>true);
         user.save();
-        res.status(200).send(`quantity of product with title ${title} was set to ${quantity}`)
+        res.status(200).json(`quantity of product with title ${title} was set to ${quantity}`)
     } catch (error) {
         next(error);
     }
@@ -189,7 +189,7 @@ userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
             await userModel.findByIdAndUpdate(id,{password:hashedPassword});
         }
         await userModel.findByIdAndUpdate(id,{email, name, gender});
-        res.status(200).send("user info updated successfully");
+        res.status(200).json("user info updated successfully");
     } catch (error) {
         next(error);
     }
@@ -208,7 +208,7 @@ userRouter.delete('/cart/:id/:title', async (req, res, next)=>{
         const newCart = user.cart.filter( cartItem => cartItem.title !== title );
         user.cart = newCart;
         user.save();
-        res.status(200).send(`product with title ${title} successfully removed`);
+        res.status(200).json(`product with title ${title} successfully removed`);
     } catch (error) {
         next(error);
     }
@@ -222,7 +222,7 @@ userRouter.delete('/cart/:id', async (req, res, next)=>{
         if(!user) throw customError(404, 'can not find any data for this user');
         user.cart = [];
         user.save();
-        res.status(200).send("cart is empty now")
+        res.status(200).json("cart is empty now")
     } catch (error) {
         next(error);
     }
@@ -236,7 +236,7 @@ userRouter.delete('/orders/:orderID', async (req, res, next)=>{
         const order = await orderModel.findOne({_id:orderID});
         if(order.status !== 'pending') res.status(405).send(`can not cancel this order after status has been updated to ${order.status}`);
         await orderModel.deleteOne({_id:orderID});
-        res.status(200).send("order deleted successfully");
+        res.status(200).json("order deleted successfully");
     } catch (error) {
         next(error);
     }
