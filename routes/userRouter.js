@@ -52,6 +52,9 @@ userRouter.post('/login', async (req, res, next)=>{
 userRouter.post('/cart', async (req, res, next)=>{
     try {
         const { userID, bookID } = req.body;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== userID ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
         const { title, unitPrice, category, image } = await productModel.findOne({_id:bookID});
@@ -68,6 +71,9 @@ userRouter.post('/cart', async (req, res, next)=>{
 userRouter.post('/orders', async (req, res, next)=>{
     try {
         const { userID, bookID } = req.body;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== userID ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
         const d = new Date();
@@ -93,8 +99,12 @@ userRouter.post('/orders', async (req, res, next)=>{
 
 
 // get all products
-userRouter.get('/products', async (req, res, next)=>{
+userRouter.get('/products/:id', async (req, res, next)=>{
     try {
+        const { id } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const products = await productModel.find();
         res.status(200).json(products);
     } catch (error) {
@@ -103,9 +113,12 @@ userRouter.get('/products', async (req, res, next)=>{
 })
 
 // get products by category
-userRouter.get('/products/:category', async (req, res, next)=>{
+userRouter.get('/products/:id/:category', async (req, res, next)=>{
     try {
-        const { category } = req.params;
+        const { id, category } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const categoryProducts = await productModel.find({category});
         res.status(200).json(categoryProducts);
     } catch (error) {
@@ -117,6 +130,9 @@ userRouter.get('/products/:category', async (req, res, next)=>{
 userRouter.get('/profile/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
         res.status(200).json(user);
@@ -129,6 +145,9 @@ userRouter.get('/profile/:id', async (req, res, next)=>{
 userRouter.get('/cart/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
         res.status(200).json({userCart:user.cart});
@@ -141,6 +160,9 @@ userRouter.get('/cart/:id', async (req, res, next)=>{
 userRouter.get('/orders/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const userOrders = await orderModel.find({userID:id});
         if(!userOrders) res.status(200).send("This user has no orders");
         res.status(200).json({userCart:userOrders});
@@ -157,6 +179,9 @@ userRouter.get('/orders/:id', async (req, res, next)=>{
 userRouter.patch('/cart', async (req, res, next)=>{
     try {
         const { userID, title, quantity } = req.body;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== userID ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
         const newCart = user.cart.map( cartItem =>{
@@ -176,6 +201,9 @@ userRouter.patch('/cart', async (req, res, next)=>{
 userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
     try {
         const { id, email, name, gender, password } = req.body;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
         if(req.file){
@@ -203,6 +231,9 @@ userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
 userRouter.delete('/cart/:id/:title', async (req, res, next)=>{
     try {
         const { id, title } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
         const newCart = user.cart.filter( cartItem => cartItem.title !== title );
@@ -218,6 +249,9 @@ userRouter.delete('/cart/:id/:title', async (req, res, next)=>{
 userRouter.delete('/cart/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:id});
         if(!user) throw customError(404, 'can not find any data for this user');
         user.cart = [];
@@ -228,11 +262,13 @@ userRouter.delete('/cart/:id', async (req, res, next)=>{
     }
 })
 
-
 // cancel an order
-userRouter.delete('/orders/:orderID', async (req, res, next)=>{
+userRouter.delete('/orders/:id/:orderID', async (req, res, next)=>{
     try {
-        const { orderID } = req.params;
+        const { id, orderID } = req.params;
+        const { authorization: token } = req.headers;
+        const payload = await verifyToken(token);
+        if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const order = await orderModel.findOne({_id:orderID});
         if(order.status !== 'pending') res.status(405).send(`can not cancel this order after status has been updated to ${order.status}`);
         await orderModel.deleteOne({_id:orderID});
@@ -241,59 +277,5 @@ userRouter.delete('/orders/:orderID', async (req, res, next)=>{
         next(error);
     }
 })
-
-
-/////////////////////////////////////////// ONLY ADMIN CRUD /////////////////////////////////////////
-
-// // get all users
-// // get one user by email
-// userRouter.get('/users/:id', async (req, res, next)=>{
-//     try {
-//         const { id } = req.params;
-//         if (id) {
-//             const user = await userModel.findById(id);
-//             res.status(200).send(user);
-//         } else {
-//             const allUsers = await userModel.find();
-//             res.status(200).send(allUsers);
-//         }
-//     } catch (error) {
-//         next(error);
-//     }
-// })
-
-
-// // delete all users
-// // delete one user by email
-// userRouter.delete('/users', async (req, res, next)=>{
-//     try {
-//         const { id } = req.body;
-//         if(id){
-//             await userModel.deleteOne({_id:id});
-//         }
-//         else{
-//             await userModel.deleteMany();
-//         }
-//         res.status(200).send("deleted successfully");
-//     } catch (error) {
-//         next(error);
-//     }
-// })
-
-
-// // update order status
-// userRouter.patch('/orders', async (req, res, next)=>{
-//     try {
-//         const { id, status } = req.body;
-//         const order = await orderModel.findOne({_id:id});
-//         if(order.status !== 'pending') res.stauts(200).send(`can not update status for this order`);
-//         await orderModel.findByIdAndUpdate(id,{status});
-//         res.status(200).send(`order status successfully updated to ${status}`);
-//     } catch (error) {
-//         next(error);
-//     }
-// })
-
-
 
 module.exports = userRouter;

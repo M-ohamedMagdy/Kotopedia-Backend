@@ -17,17 +17,13 @@ const hashPassword = (password) => bcrypt.hash(password, saltRounds);
 
 const comparePassword = (password, hash) => bcrypt.compare(password, hash);
 
-const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:60*15})
+const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:'30m'});
 
-const verifyToken = (token) => asyncVerifyToken(token, secretTokenKey)
+const verifyToken = (token) => asyncVerifyToken(token, secretTokenKey);
 
 const multerStorage = multer.diskStorage({
-    destination:(req,file,cb)=>{
-        cb(null,'./assets')
-    },
-    filename:(req,file,cb)=>{
-        cb(null,file.originalname);
-    }
+    destination:(req,file,cb)=>{ cb(null,'./assets') },
+    filename:(req,file,cb)=>{ cb(null,file.originalname) }
 })
 
 const multerFilter = (req,file,cb)=>{
