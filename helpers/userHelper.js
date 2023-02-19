@@ -6,20 +6,19 @@ const cloud = require('../cloudinaryConfig');
 const fs = require('fs');
 const multer = require('multer');
 
-
-const saltRounds = 10;
-const secretTokenKey = 'meanStackProjectKOTOPEDIA';
+// const saltRounds = process.env.SALT_ROUNDS;
+// const secretTokenKey = process.env.SECRET_KEY;
 
 const asyncSignToken = util.promisify(jwt.sign);
 const asyncVerifyToken = util.promisify(jwt.verify);
 
-const hashPassword = (password) => bcrypt.hash(password, saltRounds);
+const hashPassword = (password) => bcrypt.hash(password, process.env.SALT_ROUNDS);
 
 const comparePassword = (password, hash) => bcrypt.compare(password, hash);
 
-const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:'30m'});
+const createToken = (id) => asyncSignToken({id}, process.env.SECRET_KEY, {expiresIn:'30m'});
 
-const verifyToken = (token) => asyncVerifyToken(token, secretTokenKey);
+const verifyToken = (token) => asyncVerifyToken(token, process.env.SECRET_KEY);
 
 const multerStorage = multer.diskStorage({
     destination:(req,file,cb)=>{ cb(null,'./assets') },

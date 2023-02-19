@@ -65,7 +65,8 @@ adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
             fs.unlinkSync(req.file.path);
         }
         await productModel.findByIdAndUpdate(id,{title, category, unitPrice, description, author});
-        res.status(200).json("Book info successfully updated");
+        const products = await productModel.find();
+        res.status(200).json(products);
     } catch (error) {
         next(error);
     }

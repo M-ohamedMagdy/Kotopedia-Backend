@@ -27,6 +27,7 @@ userRouter.post('/signup', userValidationMW, photoUpdateMW, async (req, res, nex
         }
         const hashedPassword = await hashPassword(password);
         const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
+        fs.unlinkSync(req.file.path);
         res.status(200).json(newUser);
     } catch (error) {
         next(error);
