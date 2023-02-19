@@ -114,7 +114,7 @@ userRouter.get('/products/:id', async (req, res, next)=>{
 })
 
 // get products by category
-userRouter.get('/products/:id/:category', async (req, res, next)=>{
+userRouter.get('/products/:category/:id', async (req, res, next)=>{
     try {
         const { id, category } = req.params;
         const { authorization: token } = req.headers;
