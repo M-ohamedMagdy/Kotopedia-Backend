@@ -154,7 +154,7 @@ adminRouter.get('/orders', async (req, res, next)=>{
     }
 })
 
-// get one order by status
+// get orders by status
 adminRouter.get('/orders/:status', async (req, res, next)=>{
     try {
         const { status } = req.params;

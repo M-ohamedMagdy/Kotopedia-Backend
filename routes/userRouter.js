@@ -219,7 +219,7 @@ userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
         const { authorization: token } = req.headers;
         const payload = await verifyToken(token);
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
-        const user = await userModel.findOne({_id:id});
+        let user = await userModel.findById(id);
         if(!user) throw customError(404, 'can not find any data for this user');
         if(req.file){
             const result = await cloud.uploads(req.file.path);
@@ -231,8 +231,11 @@ userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
             const hashedPassword = await hashPassword(password);
             await userModel.findByIdAndUpdate(id,{password:hashedPassword});
         }
-        await userModel.findByIdAndUpdate(id,{email, name, gender});
-        res.status(200).json("user info updated successfully");
+        if(email) await userModel.findByIdAndUpdate(id,{email})
+        if(name) await userModel.findByIdAndUpdate(id,{email})
+        if(gender) await userModel.findByIdAndUpdate(id,{gender})
+        user = await userModel.findById(id);
+        res.status(200).json(user);
     } catch (error) {
         next(error);
     }
