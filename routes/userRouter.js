@@ -81,8 +81,7 @@ userRouter.post('/orders', async (req, res, next)=>{
         const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
         if(bookID){
             const {title,unitPrice,category,image} = await productModel.findOne({_id:bookID});
-            const totalPrice = unitPrice;
-            await orderModel.create({email:user.email, userID, date, totalPrice, productsInOrder:{title, quantity:1, unitPrice, category, image}});
+            await orderModel.create({email:user.email, userID, date, totalPrice:unitPrice , productsInOrder:{title, quantity:1, unitPrice, category, image}});
             res.status(200).json(`item with id ${bookID} is ordered successfully`);
         }
         else{

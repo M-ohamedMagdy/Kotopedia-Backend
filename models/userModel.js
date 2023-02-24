@@ -21,6 +21,7 @@ const orderSchema = new Schema({
                                 email: String,
                                 date: String,
                                 status: {type:String, default:'pending'},
+                                totalPrice: Number,
                                 productsInOrder: []   // productsInOrder : [{},{},{title, quantity, unitPrice}]
                             });
 
