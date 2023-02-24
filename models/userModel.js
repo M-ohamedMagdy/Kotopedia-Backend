@@ -13,7 +13,7 @@ const userSchema = new Schema({
                                 gender: String,
                                 photo: String,
                                 role: {type:String, default:'customer'},
-                                cart: []    // cart : [{},{},{title, quantity, unitPrice, category, image}]
+                                cart: []    // cart : [{},{},{title, quantity, unitPrice, category, photo}]
                             });
 
 const orderSchema = new Schema({

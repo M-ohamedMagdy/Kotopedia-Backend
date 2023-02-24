@@ -58,8 +58,8 @@ userRouter.post('/cart', async (req, res, next)=>{
         if( payload.id !== userID ) throw customError(401, "Unauthorized Action");
         const user = await userModel.findOne({_id:userID});
         if(!user) throw customError(404, 'can not find any data for this user');
-        const { title, unitPrice, category, image } = await productModel.findOne({_id:bookID});
-        user.cart.push({title, quantity:1, unitPrice, category, image});
+        const { title, unitPrice, category, photo } = await productModel.findOne({_id:bookID});
+        user.cart.push({title, quantity:1, unitPrice, category, photo});
         user.save();
         res.status(200).json("product successfully added to cart");
     } catch (error) {
@@ -80,8 +80,8 @@ userRouter.post('/orders', async (req, res, next)=>{
         const d = new Date();
         const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
         if(bookID){
-            const {title,unitPrice,category,image} = await productModel.findOne({_id:bookID});
-            await orderModel.create({email:user.email, userID, date, totalPrice:unitPrice , productsInOrder:{title, quantity:1, unitPrice, category, image}});
+            const {title,unitPrice,category,photo} = await productModel.findOne({_id:bookID});
+            await orderModel.create({email:user.email, userID, date, totalPrice:unitPrice , productsInOrder:{title, quantity:1, unitPrice, category, photo}});
             res.status(200).json(`item with id ${bookID} is ordered successfully`);
         }
         else{
