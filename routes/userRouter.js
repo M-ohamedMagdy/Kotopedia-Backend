@@ -100,16 +100,24 @@ userRouter.post('/orders', async (req, res, next)=>{
 
 //////////////////////////////////////// User get requests ////////////////////////////////////////
 
-
 // get all products
+// get one product by title
 userRouter.get('/products/:id', async (req, res, next)=>{
     try {
         const { id } = req.params;
         const { authorization: token } = req.headers;
         const payload = await verifyToken(token);
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
-        const products = await productModel.find();
-        res.status(200).json(products);
+        const { title } = req.query;
+        if(title){
+            const product = await productModel.findOne({title});
+            if(!product) throw customError(404, `No Book found with title : ${title}`)
+            res.status(200).json(product);
+        }
+        else{
+            const products = await productModel.find();
+            res.status(200).json(products);
+        }
     } catch (error) {
         next(error);
     }
@@ -124,18 +132,6 @@ userRouter.get('/products/:category/:id', async (req, res, next)=>{
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const categoryProducts = await productModel.find({category});
         res.status(200).json(categoryProducts);
-    } catch (error) {
-        next(error);
-    }
-})
-
-// filter products by title
-userRouter.get('/products/:title/:id', async (req, res, next)=>{
-    try {
-        console.log(title);
-        const { title } = req.query;
-        const product = await productModel.find({title});
-        res.status(200).json(product);
     } catch (error) {
         next(error);
     }
