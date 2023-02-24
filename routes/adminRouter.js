@@ -171,7 +171,7 @@ adminRouter.patch('/orders', async (req, res, next)=>{
     try {
         const { orderID, status } = req.body;
         const order = await orderModel.findOne({_id:orderID});
-        if(order.status !== 'pending') res.status(200).json(`can not update status for this order anymore`);
+        if(order.status !== 'pending') throw customError(400, "Can not update an order status that is not pending")
         await orderModel.findByIdAndUpdate(orderID,{status});
         res.status(200).json(`order status successfully updated to ${status}`);
     } catch (error) {
