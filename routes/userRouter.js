@@ -166,7 +166,7 @@ userRouter.get('/orders/:id', async (req, res, next)=>{
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const userOrders = await orderModel.find({userID:id});
         if(!userOrders) res.status(200).send("This user has no orders");
-        res.status(200).json({userCart:userOrders});
+        res.status(200).json({userOrders});
     } catch (error) {
         next(error);
     }
