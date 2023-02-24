@@ -81,13 +81,16 @@ userRouter.post('/orders', async (req, res, next)=>{
         const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
         if(bookID){
             const {title,unitPrice,category,image} = await productModel.findOne({_id:bookID});
-            await orderModel.create({email:user.email, userID, date, productsInOrder:{title, quantity:1, unitPrice, category, image}});
+            const totalPrice = unitPrice;
+            await orderModel.create({email:user.email, userID, date, totalPrice, productsInOrder:{title, quantity:1, unitPrice, category, image}});
             res.status(200).json(`item with id ${bookID} is ordered successfully`);
         }
         else{
             const productsInOrder = user.cart.filter(()=>true);
             if(!productsInOrder) res.status(404).send("The cart is empty");
-            await orderModel.create({email:user.email, userID, date, productsInOrder});
+            let totalPrice = 0;
+            productsInOrder.forEach( ele => totalPrice += (ele.quantity*ele.unitPrice));
+            await orderModel.create({email:user.email, userID, date, totalPrice, productsInOrder});
             res.status(200).json("all cart items added successfully to as user order");
         }
     } catch (error) {
@@ -122,6 +125,18 @@ userRouter.get('/products/:category/:id', async (req, res, next)=>{
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const categoryProducts = await productModel.find({category});
         res.status(200).json(categoryProducts);
+    } catch (error) {
+        next(error);
+    }
+})
+
+// filter products by title
+userRouter.get('/products/:title/:id', async (req, res, next)=>{
+    try {
+        console.log(title);
+        const { title } = req.query;
+        const product = await productModel.find({title});
+        res.status(200).json(product);
     } catch (error) {
         next(error);
     }

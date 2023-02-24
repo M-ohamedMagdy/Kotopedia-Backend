@@ -52,18 +52,6 @@ adminRouter.get('/products/:category', async (req, res, next)=>{
     }
 })
 
-// filter products by title
-adminRouter.get('/products/:title/:id', async (req, res, next)=>{
-    try {
-        console.log(title);
-        const { title } = req.query;
-        const product = await productModel.find({title});
-        res.status(200).json(product);
-    } catch (error) {
-        next(error);
-    }
-})
-
 // update product info
 adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
     try {
@@ -166,12 +154,12 @@ adminRouter.get('/orders', async (req, res, next)=>{
     }
 })
 
-// get one order by id
-adminRouter.get('/orders/:id', async (req, res, next)=>{
+// get one order by status
+adminRouter.get('/orders/:status', async (req, res, next)=>{
     try {
-        const { id } = req.params;
-        const order = await orderModel.findOne({_id:id});
-        res.status(200).json(order);
+        const { status } = req.params;
+        const orders = await orderModel.find({status});
+        res.status(200).json(orders);
     } catch (error) {
         next(error);
     }
