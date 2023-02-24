@@ -12,7 +12,7 @@ const multer = require('multer');
 const asyncSignToken = util.promisify(jwt.sign);
 const asyncVerifyToken = util.promisify(jwt.verify);
 
-const hashPassword = (password) => bcrypt.hash(password, process.env.SALT_ROUNDS);
+const hashPassword = (password) => bcrypt.hash(password, 10);
 
 const comparePassword = (password, hash) => bcrypt.compare(password, hash);
 

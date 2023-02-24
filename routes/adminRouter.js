@@ -52,6 +52,18 @@ adminRouter.get('/products/:category', async (req, res, next)=>{
     }
 })
 
+// filter products by title
+adminRouter.get('/products/:title/:id', async (req, res, next)=>{
+    try {
+        console.log(title);
+        const { title } = req.query;
+        const product = await productModel.find({title});
+        res.status(200).json(product);
+    } catch (error) {
+        next(error);
+    }
+})
+
 // update product info
 adminRouter.patch('/products', photoUpdateMW, async (req, res, next)=>{
     try {
@@ -171,14 +183,12 @@ adminRouter.patch('/orders', async (req, res, next)=>{
     try {
         const { orderID, status } = req.body;
         const order = await orderModel.findOne({_id:orderID});
-        if(order.status !== 'pending') res.status(200).send(`can not update status for this order anymore`);
+        if(order.status !== 'pending') res.status(200).json(`can not update status for this order anymore`);
         await orderModel.findByIdAndUpdate(orderID,{status});
         res.status(200).json(`order status successfully updated to ${status}`);
     } catch (error) {
         next(error);
     }
 })
-
-
 
 module.exports = adminRouter;
