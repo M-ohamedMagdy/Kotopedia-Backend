@@ -179,4 +179,14 @@ adminRouter.patch('/orders', async (req, res, next)=>{
     }
 })
 
+/* FOR DEVELOPMENT */
+adminRouter.delete('/orders', async (req, res, next)=>{
+    try {
+        await orderModel.deleteMany();
+        res.status(200).json("deleted all orders successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
 module.exports = adminRouter;
