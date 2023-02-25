@@ -14,8 +14,16 @@ const productSchema = new Schema({
                                     photo: String
                                 });
 
+const feedBackSchema = new Schema({
+                                    title: String,
+                                    email: String,
+                                    date: String,
+                                    body: String
+                                });
+
 productSchema.plugin(uniqueValidator);
 
 const productModel = mongoose.model('products', productSchema);
+const feedBackModel = mongoose.model('feedBacks', feedBackSchema);
 
-module.exports = productModel;
+module.exports = {productModel, feedBackModel};

@@ -1,7 +1,7 @@
 const express = require('express');
 const {hashPassword, comparePassword, createToken, verifyToken, photoUpdateMW} = require('../helpers/userHelper');
+const {productModel, feedBackModel} = require('../models/productModel');
 const {userModel, orderModel} = require('../models/userModel');
-const productModel = require('../models/productModel');
 const userValidationMW = require('../helpers/dataValidation');
 const customError = require('../helpers/customError');
 const cloud = require('../cloudinaryConfig'); 
@@ -98,6 +98,20 @@ userRouter.post('/orders', async (req, res, next)=>{
 })
 
 
+// add feedback to product
+userRouter.post('/feedbacks', async (req, res, next)=>{
+    try {
+        const { title, email, body } = req.body;
+        const d = new Date();
+        const date = `${d.getDate()}/${(d.getMonth())+1}/${d.getFullYear()}`;
+        await feedBackModel.create({ title, email, body, date });
+        res.status(200).json("feedback submitted successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+
 //////////////////////////////////////// User get requests ////////////////////////////////////////
 
 // get all products
@@ -177,6 +191,18 @@ userRouter.get('/orders/:id', async (req, res, next)=>{
         const userOrders = await orderModel.find({userID:id});
         if(!userOrders) res.status(200).send("This user has no orders");
         res.status(200).json({userOrders});
+    } catch (error) {
+        next(error);
+    }
+})
+
+//get feedbacks of one product
+userRouter.get('/feedbacks/:title', async(req, res, next)=>{
+    try {
+        const { title } = req.params;
+        const feedbacks = await feedBackModel.find({title});
+        if(!feedbacks) throw customError(404, "No feedbacks found");
+        res.status(200).json(feedbacks);
     } catch (error) {
         next(error);
     }

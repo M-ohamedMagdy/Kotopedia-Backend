@@ -1,5 +1,5 @@
 const express = require('express');
-const productModel = require('../models/productModel');
+const {productModel, feedBackModel} = require('../models/productModel');
 const {userModel, orderModel} = require('../models/userModel');
 const {hashPassword, comparePassword, createToken, verifyToken, photoUpdateMW} = require('../helpers/userHelper');
 const customError = require('../helpers/customError');
@@ -184,6 +184,25 @@ adminRouter.delete('/orders', async (req, res, next)=>{
     try {
         await orderModel.deleteMany();
         res.status(200).json("deleted all orders successfully");
+    } catch (error) {
+        next(error);
+    }
+})
+
+
+//////////////////////////////////////// Admin feedbacks requests ////////////////////////////////////////
+
+
+// get all feedbacks
+// get feedbacks of one book
+adminRouter.get('/feedbacks', async(req, res, next)=>{
+    try {
+        const { title } = req.query;
+        let feedbacks;
+        if(title) { feedbacks = await feedBackModel.find({title}); }
+        else { feedbacks = await feedBackModel.find(); }
+        if(!feedbacks) throw customError(404, "No feedbacks found");
+        res.status(200).json(feedbacks);
     } catch (error) {
         next(error);
     }
