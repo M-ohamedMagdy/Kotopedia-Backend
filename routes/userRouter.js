@@ -254,7 +254,7 @@ userRouter.patch('/profile', photoUpdateMW, async (req, res, next)=>{
             await userModel.findByIdAndUpdate(id,{password:hashedPassword});
         }
         if(email) await userModel.findByIdAndUpdate(id,{email})
-        if(name) await userModel.findByIdAndUpdate(id,{email})
+        if(name) await userModel.findByIdAndUpdate(id,{name})
         if(gender) await userModel.findByIdAndUpdate(id,{gender})
         user = await userModel.findById(id);
         res.status(200).json(user);
