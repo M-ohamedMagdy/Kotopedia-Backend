@@ -113,7 +113,7 @@ adminRouter.get('/users/:email', async (req, res, next)=>{
         const { email } = req.params;
         const user = await userModel.findOne({email});
         if(!user) res.status(404).send("can not find any user with mentioned ID");
-        res.status(200).json(user);
+        res.status(200).json([user]);
     } catch (error) {
         next(error);
     }
