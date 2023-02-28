@@ -107,11 +107,11 @@ adminRouter.get('/users', async (req, res, next)=>{
     }
 })
 
-// get one user by id
-adminRouter.get('/users/:id', async (req, res, next)=>{
+// get one user by email
+adminRouter.get('/users/:email', async (req, res, next)=>{
     try {
-        const { id } = req.params;
-        const user = await userModel.findById(id);
+        const { email } = req.params;
+        const user = await userModel.findOne({email});
         if(!user) res.status(404).send("can not find any user with mentioned ID");
         res.status(200).json(user);
     } catch (error) {
