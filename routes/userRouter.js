@@ -310,7 +310,7 @@ userRouter.delete('/orders/:id/:orderID', async (req, res, next)=>{
         const payload = await verifyToken(token);
         if( payload.id !== id ) throw customError(401, "Unauthorized Action");
         const order = await orderModel.findOne({_id:orderID});
-        if(order.status !== 'pending') customError(400, "Can not cancel an order that is not pending!");
+        if(order.status !== 'pending') throw customError(400, "Can not cancel an order that is not pending!");
         await orderModel.deleteOne({_id:orderID});
         res.status(200).json("order deleted successfully");
     } catch (error) {
