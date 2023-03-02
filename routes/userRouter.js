@@ -21,13 +21,15 @@ app.use(cors());
 userRouter.post('/signup', userValidationMW, photoUpdateMW, async (req, res, next)=>{
     try {
         const { name, email, password, gender } = req.body;
+        let photo = "https://res.cloudinary.com/dzjcky6eb/image/upload/v1677747807/vyvdoxetqkgbelmrdl3f.png";
+        let newUser;
+        const hashedPassword = await hashPassword(password);
         if(req.file){
             const result = await cloud.uploads(req.file.path);
             photo = result.url;
         }
-        const hashedPassword = await hashPassword(password);
-        const newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
-        fs.unlinkSync(req.file.path);
+        newUser = await userModel.create({name, email, password : hashedPassword, gender, photo});
+        if(req.file) fs.unlinkSync(req.file.path);
         res.status(200).json(newUser);
     } catch (error) {
         next(error);
