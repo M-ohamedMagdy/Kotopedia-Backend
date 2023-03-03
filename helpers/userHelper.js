@@ -16,7 +16,7 @@ const hashPassword = (password) => bcrypt.hash(password, saltRounds);
 
 const comparePassword = (password, hash) => bcrypt.compare(password, hash);
 
-const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:'1d'});
+const createToken = (id) => asyncSignToken({id}, secretTokenKey, {expiresIn:'30m'});
 
 const verifyToken = (token) => asyncVerifyToken(token, secretTokenKey);
 
